@@ -1,0 +1,281 @@
+CREATE SCHEMA Whispering_Journeys;
+SET SEARCH_PATH TO Whispering_Journeys;
+
+CREATE TABLE Customer (
+	Login_ID SERIAL,
+	Contact_No CHAR(10) CHECK (Contact_No ~ '^[0-9]{10}$') NOT NULL,
+	Name VARCHAR(50) NOT NULL, 
+	DOB DATE NOT NULL, 
+	Gender CHAR(1) NOT NULL,
+	Nationality VARCHAR(20),
+	E_mail VARCHAR(50) NOT NULL,
+	
+	CONSTRAINT Check_Gender CHECK (Gender IN ('M', 'F', 'O')),
+	PRIMARY KEY (Login_ID)
+);
+
+CREATE TABLE Travel_Companions (
+	Login_ID SERIAL, 
+	Companion_Name VARCHAR(30) NOT NULL,
+	Gender CHAR(1) NOT NULL,
+	Contact_No CHAR(10) CHECK (Contact_No ~ '^[0-9]{10}$') NOT NULL,
+	DOB DATE NOT NULL,
+	Nationality VARCHAR(20),
+	E_mail VARCHAR(30) NOT NULL,
+	
+	CONSTRAINT Check_Gender CHECK (Gender IN ('M', 'F', 'O')),
+	PRIMARY KEY (Login_ID, Companion_Name),
+	FOREIGN KEY (Login_ID) REFERENCES Customer(Login_ID)
+ 		ON UPDATE CASCADE ON DELETE CASCADE 
+);
+
+CREATE TABLE Hotels (
+	Hotel_ID SERIAL,
+	Hotel_Name VARCHAR(30) NOT NULL,
+	Available_rooms INTEGER NOT NULL,
+	Ratings NUMERIC(2, 1) NOT NULL,
+	Hotel_Type VARCHAR(20) NOT NULL,
+	Address VARCHAR(50) NOT NULL,
+	
+	CONSTRAINT Check_Ratings CHECK (Ratings >= 0 AND Ratings <= 5),
+	PRIMARY KEY (Hotel_ID)
+);
+
+CREATE TABLE Rooms (
+	Hotel_ID SERIAL,
+	Room_No SERIAL,
+	Room_Type VARCHAR(20) NOT NULL,
+	Max_Capacity INTEGER NOT NULL,
+	Price_Per_Adult INTEGER NOT NULL,
+	Price_Per_Child INTEGER NOT NULL,
+	Taxation_Percentage NUMERIC(5, 2) NOT NULL,
+	
+	CONSTRAINT Check_Room_No CHECK (Room_No >= 0 AND Room_No <= 9999),
+	CONSTRAINT Check_Max_Capacity CHECK (Max_Capacity <= 5),
+	CONSTRAINT Check_Price_Per_Adult CHECK (Price_Per_Adult > 0),
+	CONSTRAINT Check_Price_Per_Child CHECK (Price_Per_Child > 0),
+	CONSTRAINT Check_Taxation_Percentage CHECK (Taxation_Percentage >= 0 AND Taxation_Percentage <= 100),
+	PRIMARY KEY (Hotel_ID, Room_No),
+	FOREIGN KEY (Hotel_ID) REFERENCES Hotels(Hotel_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE 
+);
+
+CREATE TABLE Hotel_Accessories (
+	Hotel_ID SERIAL,
+	Accessory VARCHAR(50) NOT NULL,	
+	
+	PRIMARY KEY (Hotel_ID, Accessory),
+	FOREIGN KEY (Hotel_ID) REFERENCES Hotels(Hotel_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE 
+);
+
+CREATE TABLE Room_Accessories (
+	Hotel_ID SERIAL,
+	Room_No SERIAL,
+	Accessory VARCHAR(30) NOT NULL,
+	
+	PRIMARY KEY (Hotel_ID, Room_No, Accessory),
+	FOREIGN KEY (Hotel_ID, Room_No) REFERENCES Rooms(Hotel_ID, Room_No)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Manager (
+	Hotel_ID SERIAL,
+	Manager_ID SERIAL,
+	Name VARCHAR(30) NOT NULL,
+	E_mail VARCHAR(30) UNIQUE NOT NULL,
+	Contact_No CHAR(10) CHECK (Contact_No ~ '^[0-9]{10}$') NOT NULL,
+	
+	PRIMARY KEY (Manager_ID),
+	FOREIGN KEY (Hotel_ID) REFERENCES Hotels(Hotel_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Stayed_IN (
+	Login_ID SERIAL,
+	Companion_Name VARCHAR(30),
+	Hotel_ID SERIAL,
+	Room_No INTEGER,
+	
+	PRIMARY KEY (Login_ID, Companion_Name, Hotel_ID, Room_No),
+	FOREIGN KEY (Login_ID, Companion_Name) REFERENCES Travel_Companions(Login_ID, Companion_Name)
+		ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (Hotel_ID, Room_No) REFERENCES Rooms(Hotel_ID, Room_No)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);	
+
+CREATE TABLE Transportation (
+	Transportation_ID CHAR(9),
+	Departure_Date DATE NOT NULL,
+	Departure_Time TIME NOT NULL,
+	Return_Date DATE NOT NULL,
+	Return_Time TIME NOT NULL,
+	Location_From VARCHAR(30) NOT NULL,
+	Location_To VARCHAR(30) NOT NULL,
+	
+	PRIMARY KEY (Transportation_ID)
+);
+
+CREATE TABLE Flight_Details (
+	Flight_ID CHAR(9), 
+	Flight_Licence_Number VARCHAR(15) NOT NULL,
+	Airlines_Company VARCHAR(30) NOT NULL,
+	
+	CONSTRAINT Check_Flight_Licence_Number 
+        CHECK (Flight_Licence_Number SIMILAR TO '[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]-[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]'),
+	PRIMARY KEY (Flight_ID),
+	FOREIGN KEY (Flight_ID) REFERENCES Transportation(Transportation_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Flight_Class_Price (
+	Flight_ID CHAR(9), 
+	Flight_Class_Type VARCHAR(20) NOT NULL,
+	Flight_Class_Price INTEGER NOT NULL,
+	
+	CONSTRAINT Check_Flight_Class_Price CHECK (Flight_Class_Price > 0),
+	PRIMARY KEY (Flight_ID, Flight_Class_Type),
+	FOREIGN KEY (Flight_ID) REFERENCES Flight_Details(Flight_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Car_Details (
+	Car_ID CHAR(9), 
+	Car_Licence_Number VARCHAR(15) NOT NULL,
+	Car_Brand VARCHAR(30) NOT NULL,
+	Fuel_Type VARCHAR(30) NOT NULL,
+	
+	CONSTRAINT Check_Car_Licence_Number 
+        CHECK (Car_Licence_Number SIMILAR TO '[A-Z]{2}-\d{2}-[A-Z]{2}-\d{4}'),
+	PRIMARY KEY (Car_ID),
+	FOREIGN KEY (Car_ID) REFERENCES Transportation(Transportation_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Car_Class_Price (
+	Car_ID CHAR(9), 
+	Car_Class_Type VARCHAR(20) NOT NULL,
+	Car_Class_Price INTEGER NOT NULL,
+	
+	CONSTRAINT Check_Car_Class_Price CHECK (Car_Class_Price > 0),
+	PRIMARY KEY (Car_ID, Car_Class_Type),
+	FOREIGN KEY (Car_ID) REFERENCES Car_Details(Car_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Train_Details (
+	Train_ID CHAR(9), 
+	Train_Licence_Number VARCHAR(5) NOT NULL,
+	Rail_Company VARCHAR(50) NOT NULL,
+	
+	CONSTRAINT Check_Train_Licence_Number 
+        CHECK (Train_Licence_Number ~ '^[0-9]{5}$'),
+	PRIMARY KEY (Train_ID),
+	FOREIGN KEY (Train_ID) REFERENCES Transportation(Transportation_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Train_Class_Price (
+	Train_ID CHAR(9), 
+	Train_Class_Type VARCHAR(50) NOT NULL,
+	Train_Class_Price INTEGER NOT NULL,
+	
+	CONSTRAINT Check_Train_Class_Price CHECK (Train_Class_Price > 0),
+	PRIMARY KEY (Train_ID, Train_Class_Type),
+	FOREIGN KEY (Train_ID) REFERENCES Train_Details(Train_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Bus_Details (
+	Bus_ID CHAR(9), 
+	Bus_Licence_Number VARCHAR(15) NOT NULL,
+	Bus_Company VARCHAR(70) NOT NULL,
+	
+	CONSTRAINT Check_Bus_Licence_Number 
+        CHECK (Bus_Licence_Number SIMILAR TO '[A-Z]{2}-\d{2}-[A-Z]{2}-\d{4}'),
+	PRIMARY KEY (Bus_ID),
+	FOREIGN KEY (Bus_ID) REFERENCES Transportation(Transportation_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Bus_Class_Price (
+	Bus_ID CHAR(9), 
+	Bus_Class_Type VARCHAR(20) NOT NULL,
+	Bus_Class_Price INTEGER NOT NULL,
+	
+	CONSTRAINT Check_Bus_Class_Price CHECK (Bus_Class_Price > 0),
+	PRIMARY KEY (Bus_ID, Bus_Class_Type),
+	FOREIGN KEY (Bus_ID) REFERENCES Bus_Details(Bus_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Pre_Packages (
+	Transportation_ID CHAR(9),
+	Package_ID SERIAL,
+	Package_Name VARCHAR(50) NOT NULL,
+	Package_Price INTEGER NOT NULL,
+	
+	CONSTRAINT Check_Package_Price CHECK (Package_Price > 0),
+	PRIMARY KEY (Package_ID),
+	FOREIGN KEY (Transportation_ID) REFERENCES Transportation(Transportation_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Place_Details (
+	Place VARCHAR(60),
+	City VARCHAR(60),
+	State VARCHAR(60),
+	Country VARCHAR(60),
+	Season VARCHAR(60),
+	Opening_Time TIME,
+	Closing_Time TIME,
+	Category VARCHAR(60) NOT NULL,
+	
+	PRIMARY KEY (Place, City, State, Country, Season, Opening_Time, Closing_Time)
+);
+
+CREATE TABLE Attractions (
+	Package_ID SERIAL,
+	Place VARCHAR(60),
+	City VARCHAR(60),
+	State VARCHAR(60),
+	Country VARCHAR(60),
+	Season VARCHAR(60),
+	Opening_Time TIME,
+	Closing_Time TIME,
+
+	PRIMARY KEY (Package_ID, Place, City, State, Country, Season, Opening_Time, Closing_Time),
+	FOREIGN KEY (Package_ID) REFERENCES Pre_Packages(Package_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (Place, City, State, Country, Season, Opening_Time, Closing_Time) REFERENCES Place_Details(Place, City, State, Country, Season, Opening_Time, Closing_Time)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Registration (
+	Registration_ID SERIAL,
+	
+	PRIMARY KEY (Registration_ID)
+);
+
+CREATE TABLE Registered_IN (
+	Package_ID SERIAL,
+	Login_ID SERIAL,
+	Registration_ID SERIAL,
+	Mode_of_Payment VARCHAR(20) NOT NULL,
+	Currency VARCHAR(40) NOT NULL,
+	Ratings NUMERIC(2,1) NOT NULL,
+	Review_status VARCHAR(10) NOT NULL,
+	Review TEXT NOT NULL,
+	
+	CONSTRAINT Check_Ratings CHECK (Ratings >= 0 AND Ratings <= 5),
+	CONSTRAINT Check_Review_status CHECK (Review_status IN ('Positive', 'Negative', 'Neutral')),
+	PRIMARY KEY (Package_ID, Login_ID, Registration_ID),
+	FOREIGN KEY (Package_ID) REFERENCES Pre_Packages(Package_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (Login_ID) REFERENCES Customer(Login_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (Registration_ID) REFERENCES Registration(Registration_ID)
+		ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+
