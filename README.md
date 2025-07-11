@@ -12,6 +12,10 @@
   - Created an **ER diagram** to represent the data model
   - Applied **normalization** techniques (normal forms) to ensure data integrity
   - Designed the **relational schema** for the database
-  - Utilized tools like:
-    - **DIA Diagram Editor** for designing the ER model
-    - **pgAdmin** for implementing and managing the PostgreSQL database
+ 
+## 📚 Tools & Technologies
+
+- **PostgreSQL** — Database system  
+- **pgAdmin** — Database management interface  
+- **DIA Diagram Editor** — Used for ER diagram design  
+- **SQL** — Schema creation and data manipulation
